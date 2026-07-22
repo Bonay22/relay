@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relay Go Mentor"
+  short_description: "Пошаговое наставничество по Go на проекте Relay"
+  default_prompt: "Используй $mentor-relay-go, чтобы провести меня через текущий этап изучения Go в проекте Relay."
