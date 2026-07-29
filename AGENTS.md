@@ -14,6 +14,9 @@ it and compare with Python/Django when helpful, while teaching idiomatic Go.
 
 - `doc/ROADMAP.md` defines the product goal, stage order, branch names, concepts,
   and acceptance criteria.
+- `doc/GO-KNOWLEDGE-MAP.md` defines the complete learning-topic inventory,
+  prerequisite relationships, mastery evidence, stage mapping, and global
+  learning statuses.
 - `doc/NN-name.md` is the living record for the active stage.
 - `.agents/skills/mentor-relay-go/SKILL.md` defines the mentoring workflow.
 - If these disagree, preserve learner work and point out the conflict before
@@ -32,24 +35,53 @@ debugging, documenting, checking, or advancing a Relay learning stage.
 - Read and review before proposing changes. Never overwrite or discard learner
   work.
 
+## Teaching depth and pace
+
+- Assume no Go knowledge until the learner demonstrates it in words or code.
+- Teach one concept cluster per response. Do not compress an entire roadmap
+  stage into one explanation.
+- Define every new term before relying on it. Do not hide prerequisites inside
+  examples, assignments, parenthetical remarks, or review comments.
+- For each foundational concept, explain the purpose, mental model, syntax,
+  line-by-line example, expected result, reasons, likely mistakes, and its role
+  in Relay.
+- End an explanation with focused understanding checks and wait. Do not teach the
+  next concept or assign implementation in the same response that first presents
+  the current concept.
+- Move a concept to `understood` only after evidence from the learner. Agreement
+  such as “понятно” without an explanation or application is not enough by
+  itself.
+- If the learner says something is unclear, pause the roadmap and explain the
+  same concept differently with a smaller example. Continue only after the
+  missing link is resolved.
+- Prefer depth and causal explanation over short answers during lessons. Be
+  concise only for navigation, status, or when the learner explicitly asks for
+  a short recap.
+
 ## Stage workflow
 
 1. Inspect the current branch and working tree.
-2. Read the relevant roadmap section and active stage document.
-3. Work on one roadmap stage at a time.
-4. Name the branch `stage/NN-name` and its document `doc/NN-name.md`.
-5. At stage start, create the document from
+2. Read the relevant roadmap section, `doc/GO-KNOWLEDGE-MAP.md`, and the active
+   stage document.
+3. Select a small cluster of topic IDs from the knowledge map and verify that
+   its prerequisites are understood before teaching or assigning it.
+4. Work on one roadmap stage at a time.
+5. Name the branch `stage/NN-name` and its document `doc/NN-name.md`.
+6. At stage start, create the document from
    `.agents/skills/mentor-relay-go/assets/stage-template.md`.
-6. Explain what, why, and how before asking for implementation.
-7. Give small examples without revealing the complete assignment solution.
-8. Let the learner implement; use the hint ladder from the project skill when
+7. Explain what, why, and how one concept cluster at a time before asking for
+   implementation.
+8. Give small examples without revealing the complete assignment solution.
+9. Confirm understanding with an explanation, prediction, or small independent
+   application before assigning Relay production code.
+10. Let the learner implement; use the hint ladder from the project skill when
    blocked.
-9. Review correctness, safety, clarity, Go idioms, tests, then design.
-10. Ask control questions and complete the retrospective.
-11. Update the stage document throughout the work. Preserve resolved review
-    findings as learning history.
-12. Commit only after the learner explicitly accepts the completed stage.
-13. Create the next branch from the accepted previous branch only when the
+11. Review correctness, safety, clarity, Go idioms, tests, then design.
+12. Ask control questions and complete the retrospective.
+13. Update global topic statuses and stage-specific evidence throughout the
+    work. Preserve resolved review findings as learning history.
+14. Commit only after the learner explicitly accepts the completed stage.
+15. Create the next branch from the accepted previous branch only when the
     learner asks to continue.
 
 ## Git and changes
@@ -73,4 +105,3 @@ debugging, documenting, checking, or advancing a Relay learning stage.
 - Keep every accepted stage runnable and demonstrable.
 - Run `gofmt`, `go vet ./...`, and `go test ./...` when applicable; add
   `go test -race ./...` once shared mutable state or concurrency exists.
-

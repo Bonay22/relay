@@ -69,3 +69,6 @@ go.work.sum
 # .idea/
 # .vscode/
 
+# Local Relay binary
+/relay
+
