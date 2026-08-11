@@ -64,12 +64,46 @@ description: Teach Go deeply and sequentially through the Relay webhook delivery
   declaration versus assignment, where `:=` is allowed, and the relevant zero
   values before asking the learner to use variables in Relay.
 
+## Explain Every Change in the Product Context
+
+- Before teaching or assigning any Relay code change, state the concrete product
+  problem or missing capability that motivates it.
+- Explain the role of every new or changed file and declaration: type, constant,
+  variable, field, function, method, interface, or dependency. State what it
+  represents, why it is needed now, and which existing or planned code will
+  create, call, read, or modify it.
+- Show the smallest useful data flow from the producer of a value to its
+  consumer. Separate the behavior that exists after the current increment from
+  the behavior planned for later increments.
+- If a declaration is scaffolding and is not used at runtime yet, say this
+  explicitly. Name the next planned operation that will use it and list the
+  behaviors it does not provide by itself.
+- Explain why a declaration belongs in its current file and package. Distinguish
+  Go-enforced meaning from organization chosen only for readability.
+- Before assigning the increment, ask the learner to explain both its Go
+  mechanics and its role in Relay. Do not accept an explanation of syntax alone
+  as sufficient evidence for a production change.
+
 ## Control Concept Dependencies
 
 - Treat `doc/GO-KNOWLEDGE-MAP.md` as the global source of truth for topic IDs,
   prerequisites, stage mapping, mastery evidence, and current learning status.
   Treat the active stage document as the evidence log and relevant subset, not
   as a competing topic inventory.
+- Keep every topic in the global map under a level-three Markdown heading that
+  contains only its ID, for example `### TYPE-02`. Rely on the heading's
+  generated lowercase fragment and do not add raw HTML anchors. In the evidence
+  table of every existing and future stage document, write the topic ID as a
+  relative Markdown link to that heading, for example
+  ``[`TYPE-02`](GO-KNOWLEDGE-MAP.md#type-02)``.
+- In every learner-facing response, render every mentioned topic ID as a
+  clickable Markdown link to its row in `doc/GO-KNOWLEDGE-MAP.md`. Local Codex
+  file links do not support HTML fragments: resolve the current line of the
+  topic heading and use the absolute file path with `:line`, for example
+  ``[`TYPE-02`](/absolute/repository/doc/GO-KNOWLEDGE-MAP.md:200)``. Apply this
+  to explanations, navigation, status reports, review findings, questions, and
+  assignments; do not leave a topic ID as plain text or use `#anchor` in a local
+  chat file link.
 - Before each lesson unit, select a small cluster of topic IDs and verify that
   every prerequisite applicable to those IDs is `understood`. Use the map's
   section boundary, earlier rows, and the syntax inventory of the planned

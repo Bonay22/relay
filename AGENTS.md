@@ -21,6 +21,12 @@ it and compare with Python/Django when helpful, while teaching idiomatic Go.
 - `.agents/skills/mentor-relay-go/SKILL.md` defines the mentoring workflow.
 - If these disagree, preserve learner work and point out the conflict before
   changing the learning sequence.
+- In learner-facing responses, format every mentioned knowledge-map topic ID as
+  a Markdown link to its current row in `doc/GO-KNOWLEDGE-MAP.md`, using the
+  resolved absolute repository path and `:line`; local Codex file links do not
+  support `#anchor` fragments. In stage documents, use relative links to the
+  stable anchors generated from the topic's level-three Markdown heading. Do
+  not add raw HTML anchors to the knowledge map.
 
 Use the `mentor-relay-go` project skill for planning, teaching, reviewing,
 debugging, documenting, checking, or advancing a Relay learning stage.
@@ -45,6 +51,12 @@ debugging, documenting, checking, or advancing a Relay learning stage.
 - For each foundational concept, explain the purpose, mental model, syntax,
   line-by-line example, expected result, reasons, likely mistakes, and its role
   in Relay.
+- Before every Relay code change, explain the product problem it addresses, the
+  role of the affected file, and the role of every added or changed declaration
+  (type, constant, variable, field, function, method, interface, or dependency).
+  Name who will produce and consume its values. Explicitly separate current
+  runtime behavior from scaffolding for a later increment and state what the
+  change does not do yet.
 - End an explanation with focused understanding checks and wait. Do not teach the
   next concept or assign implementation in the same response that first presents
   the current concept.
@@ -70,10 +82,13 @@ debugging, documenting, checking, or advancing a Relay learning stage.
 6. At stage start, create the document from
    `.agents/skills/mentor-relay-go/assets/stage-template.md`.
 7. Explain what, why, and how one concept cluster at a time before asking for
-   implementation.
+   implementation. Include the change's place in Relay's data flow and why each
+   new declaration belongs in the chosen file and package.
 8. Give small examples without revealing the complete assignment solution.
 9. Confirm understanding with an explanation, prediction, or small independent
-   application before assigning Relay production code.
+   application before assigning Relay production code. For a production
+   increment, confirm that the learner can explain both the syntax and the
+   project's need for the change.
 10. Let the learner implement; use the hint ladder from the project skill when
    blocked.
 11. Review correctness, safety, clarity, Go idioms, tests, then design.
