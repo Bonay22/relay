@@ -1,6 +1,9 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type (
 	EventType   string
@@ -16,16 +19,18 @@ const (
 )
 
 type Event struct {
-	Type   EventType
-	Status EventStatus
+	Type      EventType
+	Status    EventStatus
+	Payload   map[string]any
+	CreatedAt time.Time
 }
 
-func NewEvent(eventType EventType) (Event, error) {
+func NewEvent(eventType EventType, payload map[string]any) (Event, error) {
 	if eventType == "" {
 		return Event{}, errors.New("event type is empty")
 	}
 
-	return Event{Type: eventType, Status: EventPending}, nil
+	return Event{Type: eventType, Status: EventPending, Payload: payload, CreatedAt: time.Now()}, nil
 }
 
 func (event *Event) MarkDelivered() error {
