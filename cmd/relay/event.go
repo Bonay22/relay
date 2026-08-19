@@ -18,6 +18,11 @@ const (
 	EventDelivered EventStatus = "delivered"
 )
 
+var (
+	ErrEventTypeEmpty = errors.New("event type is empty")
+	ErrEventNil       = errors.New("event is nil")
+)
+
 type Event struct {
 	Type      EventType
 	Status    EventStatus
@@ -27,7 +32,7 @@ type Event struct {
 
 func NewEvent(eventType EventType, payload map[string]any) (Event, error) {
 	if eventType == "" {
-		return Event{}, errors.New("event type is empty")
+		return Event{}, ErrEventTypeEmpty
 	}
 
 	return Event{Type: eventType, Status: EventPending, Payload: payload, CreatedAt: time.Now()}, nil
@@ -35,7 +40,7 @@ func NewEvent(eventType EventType, payload map[string]any) (Event, error) {
 
 func (event *Event) MarkDelivered() error {
 	if event == nil {
-		return errors.New("event is nil")
+		return ErrEventNil
 	}
 
 	event.Status = EventDelivered
