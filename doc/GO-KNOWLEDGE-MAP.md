@@ -545,7 +545,7 @@
 - **Тема:** `range` по массиву, slice, map, string, integer, channel и iterator function
 - **Доказательство понимания:** Предсказать значения итерации и копирование переменной
 - **Этап:** 02–15
-- **Статус:** `not started`
+- **Статус:** `in progress`
 
 ### CTRL-04
 
@@ -592,7 +592,7 @@
 - **Тема:** Slice descriptor, `len`, `cap`, nil и empty slice
 - **Доказательство понимания:** Нарисовать связь с backing array и различить nil/empty в API
 - **Этап:** 02–04
-- **Статус:** `not started`
+- **Статус:** `in progress`
 
 ### COLL-03
 
