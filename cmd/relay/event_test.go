@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestNewEvent проверяет успешное создание событий и сохранение входного payload.
 func TestNewEvent(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -76,6 +77,7 @@ func TestNewEvent(t *testing.T) {
 	}
 }
 
+// TestNewEventRejectsEmptyType проверяет доменную валидацию обязательного типа.
 func TestNewEventRejectsEmptyType(t *testing.T) {
 	event, err := NewEvent("", nil)
 
@@ -100,6 +102,7 @@ func TestNewEventRejectsEmptyType(t *testing.T) {
 	}
 }
 
+// TestEventMarkDelivered проверяет переход события из Pending в Delivered.
 func TestEventMarkDelivered(t *testing.T) {
 	event, err := NewEvent(OrderCreated, map[string]any{"order_id": "A-10"})
 	requireNoError(t, err)
@@ -116,7 +119,9 @@ func TestEventMarkDelivered(t *testing.T) {
 	}
 }
 
+// TestEventMarkDeliveredNilReceiver защищает вызов метода у nil receiver.
 func TestEventMarkDeliveredNilReceiver(t *testing.T) {
+	// Метод с pointer receiver можно вызвать у nil-указателя; он должен вернуть ошибку.
 	var event *Event
 	err := event.MarkDelivered()
 
@@ -125,7 +130,10 @@ func TestEventMarkDeliveredNilReceiver(t *testing.T) {
 	}
 }
 
+// requireNoError завершает текущий тест, если вызов неожиданно вернул ошибку.
 func requireNoError(t *testing.T, err error) {
+	// Helper сообщает testing о вспомогательной функции, чтобы ошибка указывала
+	// на строку вызова requireNoError.
 	t.Helper()
 
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+// TestDecodeCreateEventRequest проверяет строгий разбор тела запроса без HTTP-слоя.
 func TestDecodeCreateEventRequest(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -34,6 +35,7 @@ func TestDecodeCreateEventRequest(t *testing.T) {
 			wantErr:   true,
 			wantErrIs: nil,
 		},
+		// Второй объект не даёт проверочному Decode получить ожидаемый io.EOF.
 		{
 			name: "multiple_json_objects",
 			inputJSON: `{"type":"order.created","payload":{}}
@@ -54,6 +56,7 @@ func TestDecodeCreateEventRequest(t *testing.T) {
 				}
 
 				if testCase.wantErrIs != nil {
+					// errors.Is проверяет принадлежность к sentinel error, а не текст ошибки.
 					if !errors.Is(err, testCase.wantErrIs) {
 						t.Fatalf("unexpected error: %v", err)
 					}
@@ -78,7 +81,9 @@ func TestDecodeCreateEventRequest(t *testing.T) {
 				t.Errorf("expected Payload['order_id'] to be 'A-10', got '%v'", orderID)
 			}
 
+			// UseNumber сохраняет JSON-число без преобразования во float64.
 			value := gotRequest.Payload["amount"]
+			// Type assertion проверяет динамический тип значения внутри any.
 			amount, ok := value.(json.Number)
 
 			if !ok {
@@ -94,6 +99,7 @@ func TestDecodeCreateEventRequest(t *testing.T) {
 				t.Fatal("expected 'customer' to exist in Payload")
 			}
 
+			// Значение из map[string]any требует type assertion к строке.
 			customer, ok := value.(string)
 			if !ok {
 				t.Fatalf("customer has type %T, want string", value)
@@ -106,6 +112,7 @@ func TestDecodeCreateEventRequest(t *testing.T) {
 	}
 }
 
+// TestCreateEventResponse проверяет публичные ответы для некорректных запросов.
 func TestCreateEventResponse(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -133,8 +140,10 @@ func TestCreateEventResponse(t *testing.T) {
 
 			body := strings.NewReader(testCase.inputJSON)
 			request := httptest.NewRequest(http.MethodPost, "/v1/events", body)
+			// Recorder реализует ResponseWriter и сохраняет ответ без открытия TCP-порта.
 			recorder := httptest.NewRecorder()
 
+			// ServeHTTP проверяет тот же router и выбор маршрута, что использует сервер.
 			router.ServeHTTP(recorder, request)
 
 			if recorder.Code != testCase.wantStatus {
@@ -162,6 +171,7 @@ func TestCreateEventResponse(t *testing.T) {
 	}
 }
 
+// TestHealth защищает контракт GET /health.
 func TestHealth(t *testing.T) {
 	router := newRouter()
 
@@ -186,6 +196,7 @@ func TestHealth(t *testing.T) {
 		)
 	}
 
+	// Encoder добавляет к JSON завершающий перевод строки.
 	body := recorder.Body.String()
 	if body != "{\"status\":\"ok\"}\n" {
 		t.Errorf(
@@ -196,6 +207,7 @@ func TestHealth(t *testing.T) {
 	}
 }
 
+// TestCreateEvent проверяет успешный контракт POST /v1/events целиком.
 func TestCreateEvent(t *testing.T) {
 	router := newRouter()
 

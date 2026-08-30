@@ -30,6 +30,7 @@ type Event struct {
 	CreatedAt time.Time
 }
 
+// NewEvent создаёт событие с начальным статусом EventPending и отклоняет пустой тип.
 func NewEvent(eventType EventType, payload map[string]any) (Event, error) {
 	if eventType == "" {
 		return Event{}, ErrEventTypeEmpty
@@ -38,6 +39,7 @@ func NewEvent(eventType EventType, payload map[string]any) (Event, error) {
 	return Event{Type: eventType, Status: EventPending, Payload: payload, CreatedAt: time.Now()}, nil
 }
 
+// MarkDelivered переводит событие в статус EventDelivered и отклоняет nil receiver.
 func (event *Event) MarkDelivered() error {
 	if event == nil {
 		return ErrEventNil
