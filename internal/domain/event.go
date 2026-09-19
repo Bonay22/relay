@@ -1,4 +1,4 @@
-package main
+package domain
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 type (
 	EventType   string
 	EventStatus string
+	EventID     string // EventID идентифицирует сохранённое событие; новое событие имеет нулевой ID.
 )
 
 const (
@@ -21,6 +22,7 @@ const (
 var (
 	ErrEventTypeEmpty = errors.New("event type is empty")
 	ErrEventNil       = errors.New("event is nil")
+	ErrEventNotFound  = errors.New("event not found")
 )
 
 type Event struct {
@@ -28,6 +30,7 @@ type Event struct {
 	Status    EventStatus
 	Payload   map[string]any
 	CreatedAt time.Time
+	ID        EventID // ID назначается repository при сохранении, а не доменным конструктором.
 }
 
 // NewEvent создаёт событие с начальным статусом EventPending и отклоняет пустой тип.

@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/Bonay22/relay/internal/domain"
 )
 
 var ErrSingleJSONObjectRequired = errors.New("body must contain only one JSON object")
@@ -18,15 +20,26 @@ type createEventRequest struct {
 
 // createEventResponse описывает JSON-ответ с созданным событием.
 type createEventResponse struct {
-	Type      EventType      `json:"type"`
-	Status    EventStatus    `json:"status"`
-	Payload   map[string]any `json:"payload"`
-	CreatedAt time.Time      `json:"created_at"`
+	Type      domain.EventType   `json:"type"`
+	Status    domain.EventStatus `json:"status"`
+	Payload   map[string]any     `json:"payload"`
+	CreatedAt time.Time          `json:"created_at"`
 }
 
 // createErrorResponse задаёт единый формат ошибочного JSON-ответа.
 type createErrorResponse struct {
 	Error string `json:"error"`
+}
+
+// writeJSONResponse единая точка отправки любых JSON-ответов.
+func writeJsonResponse(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		return
+	}
 }
 
 // writeErrorResponse записывает ошибку в едином JSON-формате.
@@ -85,13 +98,7 @@ func newRouter() http.Handler {
 
 // healthHandler возвращает состояние сервиса для GET /health.
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-	if err != nil {
-		return
-	}
+	writeJsonResponse(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 // createEventHandler создаёт событие по запросу POST /v1/events.
@@ -103,11 +110,11 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Преобразование в EventType меняет тип строки, но доменную валидацию выполняет NewEvent.
-	event, err := NewEvent(EventType(request.Type), request.Payload)
+	event, err := domain.NewEvent(domain.EventType(request.Type), request.Payload)
 	if err != nil {
 		// errors.Is распознаёт sentinel error даже после возможного оборачивания.
 		switch {
-		case errors.Is(err, ErrEventTypeEmpty):
+		case errors.Is(err, domain.ErrEventTypeEmpty):
 			writeErrorResponse(w, http.StatusBadRequest, "event type is empty")
 		default:
 			writeErrorResponse(w, http.StatusInternalServerError, "internal server error")
@@ -123,11 +130,5 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: event.CreatedAt,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	err = json.NewEncoder(w).Encode(eventResponse)
-	if err != nil {
-		return
-	}
+	writeJsonResponse(w, http.StatusCreated, eventResponse)
 }

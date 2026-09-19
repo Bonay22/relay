@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/Bonay22/relay/internal/domain"
 )
 
 // TestDecodeCreateEventRequest проверяет строгий разбор тела запроса без HTTP-слоя.
@@ -146,18 +148,7 @@ func TestCreateEventResponse(t *testing.T) {
 			// ServeHTTP проверяет тот же router и выбор маршрута, что использует сервер.
 			router.ServeHTTP(recorder, request)
 
-			if recorder.Code != testCase.wantStatus {
-				t.Errorf("status code = %d, want %d", recorder.Code, testCase.wantStatus)
-			}
-
-			contentType := recorder.Header().Get("Content-Type")
-			if contentType != "application/json" {
-				t.Errorf(
-					"Content-Type = %q, want %q",
-					contentType,
-					"application/json",
-				)
-			}
+			assertJSONResponse(t, recorder, testCase.wantStatus)
 
 			var response createErrorResponse
 
@@ -179,22 +170,8 @@ func TestHealth(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-	if recorder.Code != http.StatusOK {
-		t.Errorf(
-			"status code = %d, want %d",
-			recorder.Code,
-			http.StatusOK,
-		)
-	}
 
-	contentType := recorder.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf(
-			"Content-Type = %q, want %q",
-			contentType,
-			"application/json",
-		)
-	}
+	assertJSONResponse(t, recorder, http.StatusOK)
 
 	// Encoder добавляет к JSON завершающий перевод строки.
 	body := recorder.Body.String()
@@ -216,11 +193,50 @@ func TestCreateEvent(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-	if recorder.Code != http.StatusCreated {
+
+	assertJSONResponse(t, recorder, http.StatusCreated)
+
+	var response createEventResponse
+	err := json.NewDecoder(recorder.Body).Decode(&response)
+
+	requireNoError(t, err)
+
+	if response.Type != domain.OrderCreated {
+		t.Errorf("Type = %s, want %s", response.Type, domain.OrderCreated)
+	}
+
+	if response.Status != domain.EventPending {
+		t.Errorf("Status = %s, want %s", response.Status, domain.EventPending)
+	}
+
+	if response.Payload["order_id"] != "A-10" {
+		t.Errorf("Payload = %s, want %s", response.Payload["order_id"], "A-10")
+	}
+
+	if response.CreatedAt.IsZero() {
+		t.Error("event.CreatedAt is zero time")
+	}
+}
+
+// requireNoError завершает текущий тест, если вызов неожиданно вернул ошибку.
+func requireNoError(t *testing.T, err error) {
+	// Helper сообщает testing о вспомогательной функции, чтобы ошибка указывала
+	// на строку вызова requireNoError.
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func assertJSONResponse(t *testing.T, recorder *httptest.ResponseRecorder, wantStatus int) {
+	t.Helper()
+
+	if recorder.Code != wantStatus {
 		t.Fatalf(
 			"status code = %d, want %d",
 			recorder.Code,
-			http.StatusCreated,
+			wantStatus,
 		)
 	}
 
@@ -231,26 +247,5 @@ func TestCreateEvent(t *testing.T) {
 			contentType,
 			"application/json",
 		)
-	}
-
-	var response createEventResponse
-	err := json.NewDecoder(recorder.Body).Decode(&response)
-
-	requireNoError(t, err)
-
-	if response.Type != OrderCreated {
-		t.Errorf("Type = %s, want %s", response.Type, OrderCreated)
-	}
-
-	if response.Status != EventPending {
-		t.Errorf("Status = %s, want %s", response.Status, EventPending)
-	}
-
-	if response.Payload["order_id"] != "A-10" {
-		t.Errorf("Payload = %s, want %s", response.Payload["order_id"], "A-10")
-	}
-
-	if response.CreatedAt.IsZero() {
-		t.Error("event.CreatedAt is zero time")
 	}
 }

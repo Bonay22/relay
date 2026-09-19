@@ -6,13 +6,16 @@ import (
 	"net/http"
 )
 
+const (
+	version     = "0.2.0"
+	serviceName = "Relay"
+	address     = "127.0.0.1:8080"
+)
+
 func main() {
-	version, serviceName := "0.1.0", "Relay"
 	fmt.Printf("service=%s version=%s\n", serviceName, version)
 
-	const address = "127.0.0.1:8080"
 	router := newRouter()
-
 	log.Printf("server listening on %s", address)
 
 	err := http.ListenAndServe(address, router)

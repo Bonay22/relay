@@ -1,7 +1,8 @@
-package main
+package domain
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -58,6 +59,11 @@ func TestNewEvent(t *testing.T) {
 				t.Error("event.CreatedAt.IsZero() = true, want false")
 			}
 
+			// Доменный конструктор не назначает ID до сохранения в repository.
+			if event.ID != "" {
+				t.Errorf("event.ID = %s, want \"\"", event.ID)
+			}
+
 			if testCase.wantNilPayload {
 				if event.Payload != nil {
 					t.Errorf("event.Payload = %v, want nil", event.Payload)
@@ -81,24 +87,10 @@ func TestNewEvent(t *testing.T) {
 func TestNewEventRejectsEmptyType(t *testing.T) {
 	event, err := NewEvent("", nil)
 
-	if !errors.Is(err, ErrEventTypeEmpty) {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	checkingForValidError(t, err, ErrEventTypeEmpty)
 
-	if event.Type != "" {
-		t.Errorf("event.Type = %v, want \"\"", event.Type)
-	}
-
-	if event.Status != "" {
-		t.Errorf("event.Status = %v, want \"\"", event.Status)
-	}
-
-	if event.Payload != nil {
-		t.Errorf("event.Payload = %v, want nil", event.Payload)
-	}
-
-	if !event.CreatedAt.IsZero() {
-		t.Errorf("event.CreatedAt = %v, want zero time", event.CreatedAt)
+	if !reflect.DeepEqual(event, Event{}) {
+		t.Errorf("expected empty domain.Event, got %+v", event)
 	}
 }
 
@@ -125,9 +117,7 @@ func TestEventMarkDeliveredNilReceiver(t *testing.T) {
 	var event *Event
 	err := event.MarkDelivered()
 
-	if !errors.Is(err, ErrEventNil) {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	checkingForValidError(t, err, ErrEventNil)
 }
 
 // requireNoError завершает текущий тест, если вызов неожиданно вернул ошибку.
@@ -138,5 +128,15 @@ func requireNoError(t *testing.T, err error) {
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func checkingForValidError(t *testing.T, err, wantErr error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("unexpected error: %v, want %v", err, wantErr)
 	}
 }
