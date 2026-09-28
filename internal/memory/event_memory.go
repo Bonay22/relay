@@ -3,6 +3,7 @@ package memory
 import (
 	"fmt"
 	"maps"
+	"slices"
 	"sync"
 
 	"github.com/Bonay22/relay/internal/domain"
@@ -71,6 +72,37 @@ func (repository *EventRepository) List() ([]domain.Event, error) {
 }
 
 func cloneEvent(event domain.Event) domain.Event {
-	event.Payload = maps.Clone(event.Payload)
+	if event.Payload != nil {
+		event.Payload = clonePayload(event.Payload)
+	}
 	return event
+}
+
+func cloneJSONValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		return clonePayload(typed)
+
+	case []any:
+		copySlice := slices.Clone(typed)
+
+		for index, value := range typed {
+			copySlice[index] = cloneJSONValue(value)
+		}
+
+		return copySlice
+
+	default:
+		return value
+	}
+}
+
+func clonePayload(payload map[string]any) map[string]any {
+	cloned := maps.Clone(payload)
+
+	for key, value := range payload {
+		cloned[key] = cloneJSONValue(value)
+	}
+
+	return cloned
 }

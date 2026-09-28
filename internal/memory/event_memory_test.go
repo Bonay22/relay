@@ -66,44 +66,39 @@ func TestEventMemory_SaveAndList(t *testing.T) {
 	}
 }
 
-// TestEventMemory_PayloadIsolation проверяет, что мутация Payload во внешней переменной
-// или в полученном объекте не меняет данные внутри репозитория (копирование по значению/глубокая копия).
-func TestEventMemory_PayloadIsolation(t *testing.T) {
+// TestEventMemory_SaveResultIsolation проверяет изоляцию результата Save от репозитория.
+func TestEventMemory_SaveResultIsolation(t *testing.T) {
 	repo := NewEventRepository()
 
 	saved, err := repo.Save(domain.Event{
 		Type:    domain.OrderCreated,
-		Payload: map[string]any{"status": "ok"},
+		Payload: newNestedPayload(),
 	})
 	if err != nil {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	// 1. Изменяем сохраненный объект локально
-	saved.Payload["status"] = "mutated"
+	customer := saved.Payload["customer"].(map[string]any)
+	customer["name"] = "Anna"
 
-	// 2. Получаем объект из репозитория и проверяем, что старый статус не изменился
-	fresh, err := repo.Get(saved.ID)
+	items := saved.Payload["items"].([]any)
+
+	item := items[0].(map[string]any)
+	item["code"] = "B-20"
+
+	items[0] = "replacement"
+
+	refreshed, err := repo.Get(saved.ID)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
 
-	assertPayloadStatus(t, fresh.Payload, "ok")
-
-	// 3. Изменяем полученный объект и проверяем репозиторий еще раз
-	fresh.Payload["status"] = "mutated_again"
-
-	freshAfterMutation, err := repo.Get(saved.ID)
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-
-	assertPayloadStatus(t, freshAfterMutation.Payload, "ok")
+	assertPayloadEqual(t, refreshed.Payload, newNestedPayload())
 }
 
-func TestEventMemory_GetIsolation(t *testing.T) {
+func TestEventMemory_GetResultIsolation(t *testing.T) {
 	repo := NewEventRepository()
-	event, err := domain.NewEvent(domain.OrderCreated, map[string]any{"status": "ok"})
+	event, err := domain.NewEvent(domain.OrderCreated, newNestedPayload())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,14 +108,27 @@ func TestEventMemory_GetIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	event.Payload["status"] = "mutated"
+	getEvent, err := repo.Get(saved.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	customer := getEvent.Payload["customer"].(map[string]any)
+	customer["name"] = "Anna"
+
+	items := getEvent.Payload["items"].([]any)
+
+	item := items[0].(map[string]any)
+	item["code"] = "B-20"
+
+	items[0] = "replacement"
 
 	fresh, err := repo.Get(saved.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assertPayloadStatus(t, fresh.Payload, "ok")
+	assertPayloadEqual(t, fresh.Payload, newNestedPayload())
 }
 
 func TestEventMemory_ListIsolation(t *testing.T) {
@@ -129,7 +137,7 @@ func TestEventMemory_ListIsolation(t *testing.T) {
 	saved, err := repo.Save(domain.Event{
 		Type:    domain.OrderCreated,
 		Status:  domain.EventPending,
-		Payload: map[string]any{"status": "ok"},
+		Payload: newNestedPayload(),
 	})
 	if err != nil {
 		t.Fatalf("Save failed: %v", err)
@@ -147,14 +155,49 @@ func TestEventMemory_ListIsolation(t *testing.T) {
 	}
 
 	// Изменение элемента списка не должно менять сохранённое событие.
-	listed[0].Payload["status"] = "changed"
+	customer := listed[0].Payload["customer"].(map[string]any)
+	customer["name"] = "Anna"
+
+	items := listed[0].Payload["items"].([]any)
+
+	item := items[0].(map[string]any)
+	item["code"] = "B-20"
+
+	items[0] = "replacement"
 
 	fresh, err := repo.Get(saved.ID)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
 
-	assertPayloadStatus(t, fresh.Payload, "ok")
+	assertPayloadEqual(t, fresh.Payload, newNestedPayload())
+}
+
+func TestEventMemory_SaveInputIsolation(t *testing.T) {
+	repo := NewEventRepository()
+	inputPayload := newNestedPayload()
+
+	saved, err := repo.Save(domain.Event{
+		Type:    domain.OrderCreated,
+		Status:  domain.EventPending,
+		Payload: inputPayload,
+	})
+	if err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	customer := inputPayload["customer"].(map[string]any)
+	customer["name"] = "Anna"
+
+	items := inputPayload["items"].([]any)
+	items[0] = "replacement"
+
+	fresh, err := repo.Get(saved.ID)
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+
+	assertPayloadEqual(t, fresh.Payload, newNestedPayload())
 }
 
 // TestEventMemory_GetUnknownID проверяет ошибку чтения отсутствующего события.
@@ -191,6 +234,14 @@ func assertEventEquals(t *testing.T, got, want domain.Event) {
 	assertPayloadStatus(t, got.Payload, "ok")
 }
 
+func assertPayloadEqual(t *testing.T, got, want map[string]any) {
+	t.Helper()
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Payload = %#v, want %#v", got, want)
+	}
+}
+
 func checkingForValidError(t *testing.T, err, wantErr error) {
 	t.Helper()
 	if err == nil {
@@ -198,5 +249,16 @@ func checkingForValidError(t *testing.T, err, wantErr error) {
 	}
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("unexpected error: %v, want %v", err, wantErr)
+	}
+}
+
+func newNestedPayload() map[string]any {
+	return map[string]any{
+		"customer": map[string]any{
+			"name": "Mira",
+		},
+		"items": []any{
+			map[string]any{"code": "A-10"},
+		},
 	}
 }
