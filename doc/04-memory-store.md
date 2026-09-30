@@ -4,8 +4,8 @@
 
 - **Ветка:** `stage/04-memory-store`
 - **Статус:** `in progress`
-- **Предыдущий checkpoint:** `4b102a9`
-- **Планируемый коммит:** `feat: isolate nested event payloads`
+- **Последний принятый Git checkpoint:** `85f4732`
+- **Планируемый коммит подинкремента 5A:** `feat: persist events through HTTP service`
 - **Ориентир:** 5 продуктовых инкрементов
 
 ## Результат этапа
@@ -35,6 +35,10 @@ application, domain и storage имеют явные границы.
 `context.Context` в repository, generics для коллекций, кеширование и
 оптимистические блокировки.
 
+Ученик самостоятельно применил `decodeJSON[T any]` в HTTP-тестах. Полное
+изучение generics остаётся на этапе 12, включая уже знакомый синтаксис; этот
+helper не означает завершения темы.
+
 ### Reference
 
 DI-контейнеры, reflection-based ORM, полный DDD/Clean Architecture и lock-free
@@ -56,26 +60,25 @@ pointer semantics и границу transport/domain.
 | 2 | Application service и repository contract | consumer-side interface, method sets, dependency injection | service работает через подставляемый repository | `done` |
 | 3 | Создание и получение из памяти | map как индекс, `ErrNotFound`, `RWMutex` | событие получает ID и читается по нему | `done` |
 | 4 | Детерминированный безопасный список | slices, `append`, порядок, защитные копии | результат стабилен и не раскрывает изменяемое состояние хранилища | `done` |
-| 5 | Полный HTTP API и конкурентная проверка | handler/service wiring, GET-маршруты, race detector | POST сохраняет событие, GET возвращает его и список без race | `planned` |
+| 5 | Полный HTTP API и конкурентная проверка | handler/service wiring, GET-маршруты, race detector | POST сохраняет событие, GET возвращает его и список без race | `in progress`: 5A завершён |
 
-## Завершённый инкремент
+## Завершённый подинкремент 5A
 
-- **Статус:** `done`.
-- **Результат:** `List` возвращает события в порядке сохранения, а memory
-  repository не раскрывает изменяемое состояние `Payload` через вход `Save` или
-  результаты `Save`, `Get` и `List`.
-- **Применённые концепции:** slice и `append` для порядка, type switch и рекурсия
-  для JSON-дерева, `maps.Clone` и `slices.Clone` для новых контейнеров.
-- **Проверка владения:** отдельные тесты на четырёх границах repository изменяют
-  вложенную map, backing array slice и map внутри элемента slice.
-- **Acceptance signal:** детерминированный список и защитные копии подтверждены
-  обычными тестами и race detector.
+- **Статус:** `done`, изменения пока не закоммичены.
+- **Результат:** `POST /v1/events` создаёт и сохраняет событие через application
+  service, возвращает `201` и назначенный repository ID.
+- **Поток:** request DTO → `EventService.Create` → domain constructor → memory
+  `Save` → response DTO. `main` собирает repository → service → router.
+- **Применённые концепции:** явная композиция зависимостей, handler с полем
+  service, method value для `HandleFunc`, интеграционный тест без сети.
+- **Acceptance signal:** два независимых запроса возвращают `event-1`/`A-10`
+  и `event-2`/`B-20`; `service.Get` подтверждает сохранение каждого события.
 
 ## Следующий инкремент
 
-Инкремент 5 подключит application service и memory repository к HTTP API,
-добавит `GET /v1/events/{id}` и `GET /v1/events`, а затем проверит параллельные
-запросы через race detector.
+Следующий ограниченный шаг 5B — `GET /v1/events/{id}`: чтение ID из маршрута,
+получение события через service, ответы `200` и `404`. Затем остаются список
+`GET /v1/events` и отдельная проверка параллельных запросов через race detector.
 
 ## Решения и ход реализации
 
@@ -97,6 +100,8 @@ pointer semantics и границу transport/domain.
   `RLock` и comma-ok.
 - Memory repository рекурсивно копирует JSON-подобный `Payload`: map и slice
   получают новые контейнеры, а скалярные значения копируются как значения.
+- В 5A HTTP response DTO получил ID сохранённого события. HTTP handler зависит
+  от service, а детали memory repository остаются в composition root.
 
 ## Code review
 
@@ -114,6 +119,11 @@ pointer semantics и границу transport/domain.
 результаты копирования и тесты, которые сначала проверяли только верхний уровень
 map. Финальные тесты отдельно защищают вход `Save` и результаты `Save`, `Get`,
 `List`; refactoring pass убрал дублирование map-клонирования и общей fixture.
+
+В 5A исправлены обход service, запись ответа до сохранения, повторное чтение
+исчерпанного response body и путаница между ID события и `order_id` в payload.
+Refactoring pass разделил проверки HTTP DTO и доменной модели без преобразования
+между ними; небольшое повторение helpers сохранено ради ясных контрактов.
 
 ### Рекомендации
 
@@ -137,10 +147,12 @@ critical section для счётчика и записи, различает `Lo
 
 ## Проверки
 
-- [x] `gofmt` не оставляет изменений после инкремента 4.
-- [x] `go vet ./...` после инкремента 4.
-- [x] `go test ./...` после инкремента 4.
-- [x] `go test -race ./...` после инкремента 4.
+- [x] `gofmt` не оставляет изменений после подинкремента 5A.
+- [x] `git diff --check` после подинкремента 5A.
+- [x] `go vet ./...` после подинкремента 5A.
+- [x] `go test ./...` после подинкремента 5A.
+- [x] `go test -race ./...` после подинкремента 5A. Отдельный конкурентный
+  HTTP-сценарий ещё предстоит добавить.
 
 ## Ретроспектива
 

@@ -53,6 +53,9 @@ description: Mentor practical, project-based Go learning through the Relay webho
    data, passing test, or reviewed behavior.
 5. Reassess scope if a stage exceeds six increments or stops producing visible
    product progress.
+6. Keep each learner assignment centered on one observable behavior. Split it
+   when several independent concepts or layers must be changed before any part
+   can be implemented and checked meaningfully.
 
 Complete a stage when its product result works, checks pass, and the learner can
 explain the important code and decisions. Do not require completion of all
@@ -76,6 +79,15 @@ knowledge-map topics associated with the stage number.
   default.
 - Prefer one coherent example over an encyclopedic survey. Show additional forms
   only when they prevent a likely error in the assigned increment.
+- If the implementation needs a new testing technique or standard-library
+  helper, explain it before the assignment: the problem it solves, the minimal
+  syntax, one relevant example, and the tradeoff against the plausible
+  alternative. Do not wait for the learner to produce avoidable boilerplate.
+- Contrast only options that are reasonable for the current code. Explain why
+  one is chosen without surveying every available API.
+- If a lesson grows into many major sections, narrow the Core cluster or move
+  nonessential details to Later. A request for more depth is not a request for
+  an exhaustive reference chapter.
 - Use the implementation itself as the primary understanding check. Do not add a
   separate pre-quiz for routine syntax.
 - Use a prediction or tiny experiment before implementation only for behavior
@@ -138,13 +150,51 @@ Use hints in this order:
 ## Review an Increment
 
 1. Inspect the full diff and relevant surrounding code before commenting.
-2. Review correctness, safety, clarity, Go idioms, tests, then design.
-3. Separate **Must fix** findings from optional **Consider** suggestions.
-4. Point to exact files and tight line ranges; explain the consequence.
-5. Do not edit learner code during review unless explicitly requested.
-6. Run the checks appropriate to the current stage.
-7. Accept working understanding when the learner implemented the behavior and
-   can explain the main data flow, error path, and important language choice.
+2. Make the first review comprehensive. Report all material findings that are
+   discoverable from the current diff together instead of revealing one old
+   issue after each correction.
+3. Review correctness, error paths, safety, concurrency and ownership, clarity,
+   Go idioms, simplicity, duplication, tests, then design.
+4. Classify findings as:
+   - **Must fix**: incorrect behavior, unsafe code, broken contracts, misleading
+     tests, races, leaks, or maintainability problems serious enough to block
+     the increment;
+   - **Should improve**: a simpler or more idiomatic current-scope solution that
+     should normally be addressed before commit;
+   - **Optional**: a defensible alternative or polish that does not block the
+     increment.
+5. Point to exact files and tight line ranges; explain the consequence and the
+   principle, but let the learner implement the correction.
+6. Check that tests assert observable behavior rather than duplicating the
+   production algorithm. Ensure fakes record calls and return configured values
+   instead of becoming a second implementation of the dependency.
+7. Choose comparison techniques deliberately and explain the choice when it is
+   new to the learner:
+   - use `==` for comparable values;
+   - use `errors.Is` for error identity through wrapping;
+   - consider `slices.Equal` or `maps.Equal` when their element constraints and
+     equality semantics fit;
+   - consider `reflect.DeepEqual` for exact nested equality when its treatment
+     of nil/empty values and all fields matches the contract;
+   - compare selected fields when the contract is partial, contains generated
+     values such as time, or benefits from precise diagnostics.
+8. Run an explicit refactoring pass after behavior is correct: look for a
+   simpler control flow, avoidable repetition, over-specialized helpers,
+   misleading names, redundant comments, and an existing standard-library tool
+   that makes the code clearer.
+9. Do not apply DRY mechanically. A small helper duplicated across independent
+   test packages may be clearer than a shared test utility; extract only when
+   the abstraction has a stable meaning and reduces cognitive load.
+10. Do not edit learner code during review unless explicitly requested.
+11. Run the checks appropriate to the current stage.
+12. Accept working understanding only when the product behavior works, Must-fix
+    findings are resolved, the code has passed the refactoring review, and the
+    learner can explain the main data flow, error path, and important language
+    choice.
+
+On follow-up review, do not introduce a requirement that was plainly visible in
+the original diff unless the new patch created it or an earlier defect genuinely
+hid it. Newly exposed correctness or safety defects still take precedence.
 
 Do not require exhaustive recall of variants that the increment does not use.
 

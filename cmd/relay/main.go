@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/Bonay22/relay/internal/application"
+	"github.com/Bonay22/relay/internal/memory"
 )
 
 const (
@@ -15,7 +18,10 @@ const (
 func main() {
 	fmt.Printf("service=%s version=%s\n", serviceName, version)
 
-	router := newRouter()
+	repository := memory.NewEventRepository()
+	service := application.NewEventService(repository)
+	router := newRouter(service)
+
 	log.Printf("server listening on %s", address)
 
 	err := http.ListenAndServe(address, router)

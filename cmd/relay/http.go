@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Bonay22/relay/internal/application"
 	"github.com/Bonay22/relay/internal/domain"
 )
 
@@ -24,11 +25,16 @@ type createEventResponse struct {
 	Status    domain.EventStatus `json:"status"`
 	Payload   map[string]any     `json:"payload"`
 	CreatedAt time.Time          `json:"created_at"`
+	ID        domain.EventID     `json:"id"`
 }
 
 // createErrorResponse задаёт единый формат ошибочного JSON-ответа.
 type createErrorResponse struct {
 	Error string `json:"error"`
+}
+
+type eventHandler struct {
+	service *application.EventService
 }
 
 // writeJSONResponse единая точка отправки любых JSON-ответов.
@@ -87,11 +93,13 @@ func decodeCreateEventRequest(body io.Reader) (createEventRequest, error) {
 }
 
 // newRouter собирает все HTTP-маршруты сервиса.
-func newRouter() http.Handler {
+func newRouter(service *application.EventService) http.Handler {
+	handler := &eventHandler{service: service}
+
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /health", healthHandler)
-	router.HandleFunc("POST /v1/events", createEventHandler)
+	router.HandleFunc("POST /v1/events", handler.createEvent)
 
 	return router
 }
@@ -101,16 +109,15 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// createEventHandler создаёт событие по запросу POST /v1/events.
-func createEventHandler(w http.ResponseWriter, r *http.Request) {
+// createEvent создаёт событие по запросу POST /v1/events.
+func (handler *eventHandler) createEvent(w http.ResponseWriter, r *http.Request) {
 	request, err := decodeCreateEventRequest(r.Body)
 	if err != nil {
 		writeErrorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	// Преобразование в EventType меняет тип строки, но доменную валидацию выполняет NewEvent.
-	event, err := domain.NewEvent(domain.EventType(request.Type), request.Payload)
+	event, err := handler.service.Create(domain.EventType(request.Type), request.Payload)
 	if err != nil {
 		// errors.Is распознаёт sentinel error даже после возможного оборачивания.
 		switch {
@@ -128,6 +135,7 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 		Status:    event.Status,
 		Payload:   event.Payload,
 		CreatedAt: event.CreatedAt,
+		ID:        event.ID,
 	}
 
 	writeJsonResponse(w, http.StatusCreated, eventResponse)
