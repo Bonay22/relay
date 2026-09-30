@@ -24,6 +24,8 @@
   `net/http`.
 - Health check `GET /health`, возвращающий `200 OK` и JSON-ответ.
 - Создание события через `POST /v1/events` с ответом `201 Created`.
+- Сохранение событий из `POST /v1/events` через application service и memory
+  repository; ответ содержит назначенный событию `id`.
 - Строгий разбор одного JSON-значения с отклонением malformed JSON, неизвестных
   полей и дополнительных значений.
 - Единый JSON-формат ошибок HTTP API с предсказуемыми кодами `400` и `500`.
@@ -41,6 +43,8 @@
 
 - `cmd/relay` теперь запускает HTTP-сервер вместо демонстрационного сценария
   доменной модели.
-- HTTP handlers используют доменную модель из `internal/domain`, сохраняя
-  существующий JSON-контракт.
+- HTTP handlers используют доменную модель из `internal/domain` и возвращают
+  назначенный repository ID в response DTO.
+- `POST /v1/events` подключён к application service и сохраняет событие в
+  memory repository перед формированием успешного ответа.
 - Версия startup-сообщения повышена до `0.2.0`.
